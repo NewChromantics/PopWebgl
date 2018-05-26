@@ -66,11 +66,12 @@ function TContext(CanvasElement)
 		let b = Colour4.z;
 		let a = Colour4.w;
 		gl.clearColor( r, g, b, a );
-		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	}
 	
 	//	setup global var
 	gl = this.Context;
+	gl.disable(gl.CULL_FACE);
 }
 
 
@@ -122,11 +123,14 @@ function TAttribute(Uniform,Buffer)
 	}
 }
 
-function TGeometry(Name)
+function TGeometry(Name,PrimitiveType)
 {
 	this.Name = Name;
 	this.Attributes = [];
 	this.Buffer = null;		//	gl vertex buffer
+	//	gl.TRIANGLE_STRIP
+	//	gl.TRIANGLES etc
+	this.PrimitiveType = PrimitiveType;
 	
 	this.bind = function()
 	{
@@ -179,7 +183,7 @@ function TTexture(Name,WidthOrUrl,Height)
 	this.Width = 0;
 	this.Height = 0;
 
-	const TextureInitColour = [255, 0, 255, 255];
+	const TextureInitColour = [0, 255, 0, 255];
 	
 	this.GetWidth = function()	{	return this.Width;	}
 	this.GetHeight = function()	{	return this.Height;	}
@@ -189,7 +193,7 @@ function TTexture(Name,WidthOrUrl,Height)
 		this.Asset = gl.createTexture();
 	}
 	
-	this.WritePixels = function(Width,Height,Pixels)
+	this.WritePixels = function(Width,Height,Pixels,FilterMode)
 	{
 		gl.bindTexture(gl.TEXTURE_2D, this.Asset );
 		const level = 0;
@@ -218,9 +222,18 @@ function TTexture(Name,WidthOrUrl,Height)
 		// power of 2 in both dimensions.
 		// No, it's not a power of 2. Turn of mips and set
 		// wrapping to clamp to edge
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		
+		let RepeatMode = gl.CLAMP_TO_EDGE;
+		//let RepeatMode = gl.REPEAT;
+		
+		if ( FilterMode === undefined )
+			FilterMode = gl.LINEAR;
+		
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, RepeatMode);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, RepeatMode);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, FilterMode);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, FilterMode);
+
 	}
 	
 	this.Load = function(Url)
@@ -292,7 +305,6 @@ function TRenderTarget(Name,Texture)
 	
 	this.CreateFrameBuffer = function(Texture)
 	{
-		console.log(gl);
 		this.FrameBuffer = gl.createFramebuffer();
 		this.Texture = Texture;
 		
@@ -394,7 +406,6 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 		//  https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL
 		//  WebGL provides a minimum of 8 texture units;
 		let GlTextureNames = [ gl.TEXTURE0, gl.TEXTURE1, gl.TEXTURE2, gl.TEXTURE3, gl.TEXTURE4, gl.TEXTURE5, gl.TEXTURE6, gl.TEXTURE7 ];
-		
 		//	setup textures
 		gl.activeTexture( GlTextureNames[TextureIndex] );
 		try
@@ -405,7 +416,7 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 		{
 			//  todo: bind "invalid" texture
 		}
-		gl.uniform1i(UniformPtr, TextureIndex );
+		gl.uniform1i( UniformPtr, TextureIndex );
 	}
 	
 	this.SetUniformInt = function(Uniform,Value)

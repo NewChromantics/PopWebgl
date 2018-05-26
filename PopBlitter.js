@@ -17,7 +17,7 @@ var PopGlBlitter =
 	
 	AllocBlitGeometry : function()
 	{
-		let CanvasGeo = new TGeometry("Canvas");
+		let CanvasGeo = new TGeometry("Canvas",gl.TRIANGLE_STRIP);
 		let Uvs = [
 				   new float2( 0, 0 ),
 				   new float2( 1, 0 ),
@@ -76,7 +76,8 @@ function RenderGeo(Shader,Geo,OnSetUniforms)
 		let StrideBytes = 0;
 		let OffsetBytes = 0;
 		gl.vertexAttribPointer( PositionUniform, Attrib.Size, Attrib.Type, Normalised, StrideBytes, OffsetBytes );
-		Geo.VertexCount = Attrib.Data.length;
+
+		Geo.IndexCount = Attrib.Data.length;
 	}
 	
 	let Attrib = Geo.Attributes[0];
@@ -84,7 +85,7 @@ function RenderGeo(Shader,Geo,OnSetUniforms)
 
 	gl.bindBuffer( gl.ARRAY_BUFFER, Geo.Buffer );
 	gl.enableVertexAttribArray( PositionUniform );
-	gl.drawArrays( gl.TRIANGLE_STRIP, 0, Geo.VertexCount );
+	gl.drawArrays( Geo.PrimitiveType, 0, Geo.IndexCount );
 }
 
 
