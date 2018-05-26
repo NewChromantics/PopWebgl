@@ -72,6 +72,10 @@ function TContext(CanvasElement)
 	//	setup global var
 	gl = this.Context;
 	gl.disable(gl.CULL_FACE);
+
+	//	enable float textures on GLES1
+	//	https://developer.mozilla.org/en-US/docs/Web/API/OES_texture_float
+	var ext = gl.getExtension('OES_texture_float');
 }
 
 
@@ -199,24 +203,32 @@ function TTexture(Name,WidthOrUrl,Height)
 		const level = 0;
 		const internalFormat = gl.RGBA;
 		const srcFormat = gl.RGBA;
-		const srcType = gl.UNSIGNED_BYTE;
 		
 		if ( Pixels instanceof Image )
 		{
 			console.log(Pixels);
+			const srcType = gl.UNSIGNED_BYTE;
 			this.Width = Pixels.width;
 			this.Height = Pixels.height;
 			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,	srcFormat, srcType, Pixels);
 		}
-		else
+		else if ( Pixels instanceof Uint8Array )
 		{
 			this.Width = Width;
 			this.Height = Height;
-			//  if Pixels is Uint8Array
+			const srcType = gl.UNSIGNED_BYTE;
 			const border = 0;
 			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, Width, Height, border, srcFormat, srcType, Pixels);
 		}
-
+		else if ( Pixels instanceof Float32Array )
+		{
+			this.Width = Width;
+			this.Height = Height;
+			const srcType = gl.FLOAT;
+			const border = 0;
+			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, Width, Height, border, srcFormat, srcType, Pixels);
+		}
+		
 		// WebGL1 has different requirements for power of 2 images
 		// vs non power of 2 images so check if the image is a
 		// power of 2 in both dimensions.
