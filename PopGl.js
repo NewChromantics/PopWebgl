@@ -189,6 +189,9 @@ function TGeometry(Name,PrimitiveType)
 
 function AllocPixelBuffer(Size,Colour8888)
 {
+	if ( Colour8888 instanceof float4 )
+		Colour8888 = [ Colour8888.x * 255, Colour8888.y * 255, Colour8888.z * 255, Colour8888.w * 255 ];
+	
 	let PixelArray = new Array(Size*4);
 	for ( let p=0;	p<Size;	p+=4 )
 	{
@@ -208,7 +211,7 @@ function TTexture(Name,WidthOrUrl,Height)
 	this.Height = 0;
 	this.Filename = null;
 
-	const TextureInitColour = [0, 255, 0, 255];
+	const TextureInitColour = HexToColour4('00ddffff');
 	
 	this.GetWidth = function()	{	return this.Width;	}
 	this.GetHeight = function()	{	return this.Height;	}
