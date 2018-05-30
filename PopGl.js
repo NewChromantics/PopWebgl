@@ -1,3 +1,13 @@
+// Converts from degrees to radians.
+Math.radians = function(degrees) {
+	return degrees * Math.PI / 180;
+};
+
+// Converts from radians to degrees.
+Math.degrees = function(radians) {
+	return radians * 180 / Math.PI;
+};
+
 function GetRed(Colour)
 {
 	let Value = parseInt( Colour.substring(0,2), 16);
@@ -102,6 +112,16 @@ function float4(x,y,z,w)
 	this.w = w;
 }
 
+function Matrix4x4()
+{
+	this.Values = mat4.create();
+	
+	this.Invert = function()
+	{
+		let OldValues = mat4.clone(this.Values);
+		mat4.invert( this.Values, OldValues );
+	}
+}
 
 function TAttribute(Uniform,Buffer)
 {
@@ -405,9 +425,12 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 		else if ( Value instanceof float2 )		this.SetUniformFloat2( Uniform, Value );
 		else if ( Value instanceof float3 )		this.SetUniformFloat3( Uniform, Value );
 		else if ( Value instanceof float4 )		this.SetUniformFloat4( Uniform, Value );
+		else if ( Value instanceof Matrix4x4 )	this.SetUniformMatrix4x4( Uniform, Value );
 		else if ( typeof Value === 'number' )	this.SetUniformInt( Uniform, Value );
 		else
 		{
+			console.log(typeof Value);
+			console.log(Value);
 			throw "Failed to set uniform " +Uniform + " to " + ( typeof Value );
 		}
 	}
@@ -461,6 +484,13 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 		gl.uniform4f( UniformPtr, Value.x, Value.y, Value.z, Value.w );
 	}
 
+	this.SetUniformMatrix4x4 = function(Uniform,Value)
+	{
+		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
+		let float16 = Value.Values;
+		let Normalise = false;
+		gl.uniformMatrix4fv( UniformPtr, Normalise, float16 );
+	}
 	
 	this.FragShader = this.CompileShader( gl.FRAGMENT_SHADER, FragShaderSource );
 	this.VertShader = this.CompileShader( gl.VERTEX_SHADER, VertShaderSource );
