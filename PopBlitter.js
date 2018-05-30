@@ -47,16 +47,16 @@ function TBlitter(Name,FragShader)
 	this.Render = function(Target,OnSetUniforms)
 	{
 		Target.Bind();
-		RenderGeo( this.Shader, PopGlBlitter.BlitGeometry, OnSetUniforms );
+		RenderGeo( this.Shader, PopGlBlitter.BlitGeometry, OnSetUniforms, Target );
 	}
 }
 
 
-function RenderGeo(Shader,Geo,OnSetUniforms)
+function RenderGeo(Shader,Geo,OnSetUniforms,RenderTarget)
 {
 	Shader.Bind();
 	
-	OnSetUniforms( Shader );
+	OnSetUniforms( Shader, Geo, RenderTarget );
 	
 	//	setup buffer
 	if ( Geo.Buffer == null )
