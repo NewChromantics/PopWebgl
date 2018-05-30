@@ -206,6 +206,7 @@ function TTexture(Name,WidthOrUrl,Height)
 	this.Asset = null;
 	this.Width = 0;
 	this.Height = 0;
+	this.Filename = null;
 
 	const TextureInitColour = [0, 255, 0, 255];
 	
@@ -279,9 +280,24 @@ function TTexture(Name,WidthOrUrl,Height)
 		image.onload = function()
 		{
 			This.WritePixels( 0, 0, image );
+			This.Filename = Url;
 		};
 		//  trigger load
 		image.src = Url;
+	}
+	
+	this.GetFilenameNoExtension = function()
+	{
+		if ( this.Filename == null )
+			return "";
+		
+		let Paths = this.Filename.split('/');
+		let RawFilename = Paths[Paths.length-1];
+		let Parts = RawFilename.split('.');
+		if ( Parts.length > 0 )
+			Parts.pop();
+		RawFilename = Parts.join('.');
+		return RawFilename;
 	}
 	
 	
