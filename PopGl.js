@@ -272,8 +272,11 @@ function TTexture(Name,WidthOrUrl,Height)
 
 	}
 	
-	this.Load = function(Url)
+	this.Load = function(Url,ForcedFilename)
 	{
+		if ( ForcedFilename === undefined )
+			ForcedFilename = Url;
+			
 		//	init whilst we wait for load
 		this.WritePixels( 1, 1, AllocPixelBuffer( 1, TextureInitColour ) );
 		
@@ -283,7 +286,7 @@ function TTexture(Name,WidthOrUrl,Height)
 		image.onload = function()
 		{
 			This.WritePixels( 0, 0, image );
-			This.Filename = Url;
+			This.Filename = ForcedFilename;
 		};
 		//  trigger load
 		image.src = Url;
