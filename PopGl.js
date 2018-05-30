@@ -323,9 +323,13 @@ function TTexture(Name,WidthOrUrl,Height)
 	}
 }
 
-function TScreen(CanvasElement)
+function TScreen(CanvasElement,ViewportMinMax)
 {
+	if ( ViewportMinMax === undefined )
+		ViewportMinMax = new float4(0,0,1,1);
+	
 	this.CanvasElement = CanvasElement;
+	this.ViewportMinMax = ViewportMinMax;
 	
 	this.GetWidth = function()
 	{
@@ -337,11 +341,25 @@ function TScreen(CanvasElement)
 		return this.CanvasElement.height;
 	}
 	
+	this.GetViewportWidth = function()
+	{
+		return this.GetWidth() * (ViewportMinMax.z-ViewportMinMax.x);
+	}
+	
+	this.GetViewportHeight = function()
+	{
+		return this.GetHeight() * (ViewportMinMax.w-ViewportMinMax.y);
+	}
+
 	//  unbind any frame buffer
 	this.Bind = function()
 	{
 		gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-		gl.viewport(0, 0, this.GetWidth(), this.GetHeight() );
+		let ViewportMinx = ViewportMinMax.x * this.GetWidth();
+		let ViewportMiny = ViewportMinMax.y * this.GetHeight();
+		let ViewportWidth = this.GetViewportWidth();
+		let ViewportHeight = this.GetViewportHeight();
+		gl.viewport( ViewportMinx, ViewportMiny, ViewportWidth, ViewportHeight );
 	}
 }
 
