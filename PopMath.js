@@ -91,5 +91,23 @@ function Quaternion()
 		mat4.fromQuat( Matrix.Values, this.Values );
 		return Matrix;
 	}
+	
+	this.RotateX = function(Degrees)
+	{
+		let Radians = Math.radians(Degrees);
+		quat.rotateX( this.Values, this.Values, Radians );
+	}
+	
+	this.RotateY = function(Degrees)
+	{
+		let Radians = Math.radians(Degrees);
+		quat.rotateY( this.Values, this.Values, Radians );
+	}
+	
+	this.RotateZ = function(Degrees)
+	{
+		let Radians = Math.radians(Degrees);
+		quat.rotateZ( this.Values, this.Values, Radians );
+	}
 }
 
