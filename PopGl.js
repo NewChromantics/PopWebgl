@@ -349,20 +349,20 @@ function TScreen(CanvasElement,ViewportMinMax)
 	
 	this.GetViewportWidth = function()
 	{
-		return this.GetWidth() * (ViewportMinMax.z-ViewportMinMax.x);
+		return this.GetWidth() * (this.ViewportMinMax.z-this.ViewportMinMax.x);
 	}
 	
 	this.GetViewportHeight = function()
 	{
-		return this.GetHeight() * (ViewportMinMax.w-ViewportMinMax.y);
+		return this.GetHeight() * (this.ViewportMinMax.w-this.ViewportMinMax.y);
 	}
 
 	//  unbind any frame buffer
 	this.Bind = function()
 	{
 		gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-		let ViewportMinx = ViewportMinMax.x * this.GetWidth();
-		let ViewportMiny = ViewportMinMax.y * this.GetHeight();
+		let ViewportMinx = this.ViewportMinMax.x * this.GetWidth();
+		let ViewportMiny = this.ViewportMinMax.y * this.GetHeight();
 		let ViewportWidth = this.GetViewportWidth();
 		let ViewportHeight = this.GetViewportHeight();
 		gl.viewport( ViewportMinx, ViewportMiny, ViewportWidth, ViewportHeight );
