@@ -61,8 +61,10 @@ function RenderGeo(Shader,Geo,OnSetUniforms,RenderTarget)
 	//	setup buffer
 	if ( Geo.Buffer == null )
 	{
-		//Geo.CreateBuffer();
 		Geo.Buffer = gl.createBuffer();
+	}
+	{
+		gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
 		gl.bindBuffer( gl.ARRAY_BUFFER, Geo.Buffer );
 		
 		//	all interleaved vertex data
@@ -82,7 +84,8 @@ function RenderGeo(Shader,Geo,OnSetUniforms,RenderTarget)
 	
 	let Attrib = Geo.Attributes[0];
 	let PositionUniform = gl.getAttribLocation( Shader.Program, Attrib.Uniform );
-
+	
+	gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
 	gl.bindBuffer( gl.ARRAY_BUFFER, Geo.Buffer );
 	gl.enableVertexAttribArray( PositionUniform );
 	gl.drawArrays( Geo.PrimitiveType, 0, Geo.IndexCount );
