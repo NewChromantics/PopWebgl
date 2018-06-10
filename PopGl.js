@@ -64,6 +64,7 @@ function TContext(CanvasElement)
 {
 	this.Context = null;
 	this.Canvas = CanvasElement;
+	this.OnResetCallbacks = [];
 	
 	this.Context = CanvasElement.getContext("webgl");
 	if ( !this.Context )
@@ -79,6 +80,11 @@ function TContext(CanvasElement)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	}
 	
+	this.AddOnContextResetCallback = function(OnReset)
+	{
+		this.OnResetCallbacks.push( OnReset );
+	}
+	
 	this.OnNewContext = function()
 	{
 		console.log("On new context");
@@ -89,9 +95,21 @@ function TContext(CanvasElement)
 		//	enable float textures on GLES1
 		//	https://developer.mozilla.org/en-US/docs/Web/API/OES_texture_float
 		var ext = gl.getExtension('OES_texture_float');
+		
+		//	do resets
+		let OldResets = this.OnResetCallbacks;
+		this.OnResetCallbacks = [];
+		OldResets.forEach( function(r){ r(); });
 	}
 	
-	this.Canvas.addEventListener("webglcontextrestored", this.OnNewContext.bind(this), false);
+	this.OnVrDisplayPresentChanged = function()
+	{
+		console.log("OnVrDisplayPresentChanged");
+		this.OnNewContext();
+	}
+	
+	window.addEventListener('vrdisplaypresentchange', this.OnVrDisplayPresentChanged.bind(this), true);
+	this.Canvas.addEventListener('webglcontextrestored', this.OnNewContext.bind(this), false);
 	this.OnNewContext();
 }
 
@@ -154,7 +172,7 @@ function TAttribute(Uniform,Buffer)
 	}
 }
 
-function TGeometry(Name,PrimitiveType)
+function TGeometry(Name,PrimitiveType,Context)
 {
 	this.Name = Name;
 	this.Attributes = [];
@@ -176,6 +194,15 @@ function TGeometry(Name,PrimitiveType)
 	
 	this.CreateBuffer = function()
 	{
+		if ( gl.isBuffer(this.Buffer) )
+		{
+			gl.deleteBuffer( this.Buffer );
+			this.Buffer = null;
+		}
+		
+		this.Buffer = gl.createBuffer();
+		let This = this;
+		Context.AddOnContextResetCallback( function(){	This.Buffer = null;	} );
 	}
 	
 	this.GetVertexData = function()
@@ -192,6 +219,8 @@ function TGeometry(Name,PrimitiveType)
 		this.Attributes.forEach( EnumFloats );
 		return new Float32Array( Floats );
 	}
+
+	
 }
 
 function AllocPixelBuffer(Size,Colour8888)
@@ -336,13 +365,18 @@ function TTexture(Name,WidthOrUrl,Height)
 	}
 }
 
-function TScreen(CanvasElement,ViewportMinMax)
+function TScreen(Name,CanvasElement,ViewportMinMax)
 {
 	if ( ViewportMinMax === undefined )
 		ViewportMinMax = new float4(0,0,1,1);
 	
 	this.CanvasElement = CanvasElement;
 	this.ViewportMinMax = ViewportMinMax;
+
+	this.GetName = function()
+	{
+		return Name;
+	}
 	
 	this.GetWidth = function()
 	{
@@ -460,6 +494,11 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 	this.Bind = function()
 	{
 		gl.useProgram( this.Program );
+
+		//	disable all attribs
+		let ActiveAttribCount = gl.getProgramParameter(this.Program, gl.ACTIVE_ATTRIBUTES);
+		for ( let a=0;	a<ActiveAttribCount;	a++ )
+			gl.disableVertexAttribArray( a );
 		
 		//	reset texture counter everytime we bind
 		this.CurrentTextureIndex = 0;

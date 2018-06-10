@@ -1,19 +1,27 @@
 
-function TScreenVr(EyeParams)
+function TScreenVr(Name,GetEyeParams,ViewportMinMax)
 {
 	this.ProjectionMatrix = mat4.create();
 	this.ViewMatrix = mat4.create();
-	this.EyeParams = EyeParams;
-	this.ViewportMinMax = new float4(0,0,1,1);
+	this.GetEyeParams = GetEyeParams;
+	this.ViewportMinMax = ViewportMinMax;
+	this.Rotation = new Quaternion();
+	
+	this.GetName = function()
+	{
+		return Name;
+	}
 	
 	this.GetWidth = function()
 	{
-		return this.EyeParams.renderWidth;
+		let Width = this.GetEyeParams().renderWidth;
+		return Width;
 	}
 	
 	this.GetHeight = function()
 	{
-		return this.EyeParams.renderHeight;
+		let Height = this.GetEyeParams().renderHeight;
+		return Height;
 	}
 	
 	this.GetViewportWidth = function()
@@ -34,12 +42,11 @@ function TScreenVr(EyeParams)
 		let ViewportMiny = this.ViewportMinMax.y * this.GetHeight();
 		let ViewportWidth = this.GetViewportWidth();
 		let ViewportHeight = this.GetViewportHeight();
-		//console.log("Viewport " + ViewportMinx +" "+ ViewportMiny +" "+ ViewportWidth +" "+ ViewportHeight );
+		//console.log("Viewport " + this.GetName() + ": " + ViewportMinx +" "+ ViewportMiny +" "+ ViewportWidth +" "+ ViewportHeight );
 		gl.viewport( ViewportMinx, ViewportMiny, ViewportWidth, ViewportHeight );
 	}
 	
 	
-	console.log(this.EyeParams);
 }
 
 
@@ -59,10 +66,19 @@ function TDisplay(VrDisplay)
 			{
 				if ( this.VrDisplay.isPresenting )
 				{
+					let FrameData = new VRFrameData();
+					this.VrDisplay.getFrameData(FrameData);
+
 					this.VrDisplay.depthNear = 0.1;
 					this.VrDisplay.depthFar = 10000;
-					//this.VrDisplay.getFrameData( frameData );
-				
+
+					let Rot4 = FrameData.pose.orientation;
+					let Rot = new Quaternion();
+					Rot.Values = quat.fromValues( Rot4[0], Rot4[1], Rot4[2], Rot4[3] );
+					quat.normalize( Rot.Values, Rot.Values );
+					this.ScreenLeft.Rotation = Rot;
+					this.ScreenRight.Rotation = Rot;
+					
 					OnDraw( [this.ScreenLeft, this.ScreenRight ], Time );
 				
 					this.VrDisplay.submitFrame();
@@ -84,10 +100,39 @@ function TDisplay(VrDisplay)
 	
 	this.OnPresenting = function()
 	{
-		let LeftEye = VrDisplay.getEyeParameters('left');
-		let RightEye = VrDisplay.getEyeParameters('right');
-		this.ScreenLeft = new TScreenVr( LeftEye );
-		this.ScreenRight = new TScreenVr( RightEye );
+		let GetLeftEyeParams = function()
+		{
+			let EyeParams = VrDisplay.getEyeParameters('left');
+			return EyeParams;
+		}
+		let GetRightEyeParams = function()
+		{
+			let EyeParams = VrDisplay.getEyeParameters('right');
+			return EyeParams;
+		}
+
+		let Layers = VrDisplay.getLayers();
+		
+		//	so webvr provides 1 canvas and specifies a height & width for each eye.
+		//	we're supposed to resize our canvas to fit it and then split the viewport
+		//	i'm using the params directly in TScreenVr so over-draw instead
+		//let LeftViewport = new float4( 0, 0, 0.5, 1 );
+		//let RightViewport = new float4( 0.5, 0, 1, 1 );
+		let LeftViewport = new float4( 0, 0, 1, 1 );
+		let RightViewport = new float4( 1, 0, 2, 1 );
+
+		if ( Layers.length )
+		{
+			console.log("todo: get viewport from layers");
+			/*
+			let layer = layers[ 0 ];
+			leftBounds = layer.leftBounds !== null && layer.leftBounds.length === 4 ? layer.leftBounds : defaultLeftBounds;
+			rightBounds = layer.rightBounds !== null && layer.rightBounds.length === 4 ? layer.rightBounds : defaultRightBounds;
+			 */
+		}
+		
+		this.ScreenLeft = new TScreenVr( 'LeftEye', GetLeftEyeParams, LeftViewport );
+		this.ScreenRight = new TScreenVr( 'RightEye', GetRightEyeParams, RightViewport );
 	}
 	
 	this.Enable = function(Canvas)
