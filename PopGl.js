@@ -79,13 +79,20 @@ function TContext(CanvasElement)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	}
 	
-	//	setup global var
-	gl = this.Context;
-	gl.disable(gl.CULL_FACE);
-
-	//	enable float textures on GLES1
-	//	https://developer.mozilla.org/en-US/docs/Web/API/OES_texture_float
-	var ext = gl.getExtension('OES_texture_float');
+	this.OnNewContext = function()
+	{
+		console.log("On new context");
+		//	setup global var
+		gl = this.Context;
+		gl.disable(gl.CULL_FACE);
+		
+		//	enable float textures on GLES1
+		//	https://developer.mozilla.org/en-US/docs/Web/API/OES_texture_float
+		var ext = gl.getExtension('OES_texture_float');
+	}
+	
+	this.Canvas.addEventListener("webglcontextrestored", this.OnNewContext.bind(this), false);
+	this.OnNewContext();
 }
 
 

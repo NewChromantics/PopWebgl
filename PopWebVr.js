@@ -34,6 +34,7 @@ function TScreenVr(EyeParams)
 		let ViewportMiny = this.ViewportMinMax.y * this.GetHeight();
 		let ViewportWidth = this.GetViewportWidth();
 		let ViewportHeight = this.GetViewportHeight();
+		//console.log("Viewport " + ViewportMinx +" "+ ViewportMiny +" "+ ViewportWidth +" "+ ViewportHeight );
 		gl.viewport( ViewportMinx, ViewportMiny, ViewportWidth, ViewportHeight );
 	}
 	
@@ -50,6 +51,37 @@ function TDisplay(VrDisplay)
 	this.ScreenLeft = null;
 	this.ScreenRight = null;
 
+	this.Render = function(OnDraw)
+	{
+		let DrawScreens = function(Time)
+		{
+			try
+			{
+				if ( this.VrDisplay.isPresenting )
+				{
+					this.VrDisplay.depthNear = 0.1;
+					this.VrDisplay.depthFar = 10000;
+					//this.VrDisplay.getFrameData( frameData );
+				
+					OnDraw( [this.ScreenLeft, this.ScreenRight ], Time );
+				
+					this.VrDisplay.submitFrame();
+				}
+			}
+			catch(Exception)
+			{
+				//	rethrow
+				throw Exception;
+			}
+			finally
+			{
+				//	trigger loop
+				this.Render( OnDraw );
+			}
+		};
+		this.VrDisplay.requestAnimationFrame( DrawScreens.bind(this) );
+	}
+	
 	this.OnPresenting = function()
 	{
 		let LeftEye = VrDisplay.getEyeParameters('left');
