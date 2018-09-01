@@ -4,14 +4,21 @@ var PopGlBlitter =
 	`
 	attribute vec2 PositionNorm;
 	varying vec2 uv;
+	uniform vec4 VertexRect;	//	no defaults in es glsl = vec4(0,0,1,1);
 	void main()
 	{
-		vec2 Pos2 = mix( vec2(-1,-1), vec2(1,1), PositionNorm );
-		gl_Position = vec4(Pos2, 0.0, 1.0);
-		uv = vec2( PositionNorm.x, 1.0-PositionNorm.y);
-		
-		uv.x = mix( 0.0, 1.0, uv.x );
-		uv.y = mix( 0.0, 1.0, uv.y );
+		gl_Position = vec4(PositionNorm.x,PositionNorm.y,0,1);
+		float l = VertexRect[0];
+		float t = VertexRect[1];
+		float r = l+VertexRect[2];
+		float b = t+VertexRect[3];
+		l = mix( -1.0, 1.0, l );
+		r = mix( -1.0, 1.0, r );
+		t = mix( 1.0, -1.0, t );
+		b = mix( 1.0, -1.0, b );
+		gl_Position.x = mix( l, r, PositionNorm.x );
+		gl_Position.y = mix( t, b, PositionNorm.y );
+		uv = vec2( PositionNorm.x, PositionNorm.y );
 	}
 	`,
 	
@@ -47,7 +54,13 @@ function TBlitter(Name,FragShader)
 	this.Render = function(Target,OnSetUniforms)
 	{
 		Target.Bind();
-		RenderGeo( this.Shader, PopGlBlitter.BlitGeometry, OnSetUniforms, Target );
+		let SetUniforms = function(Shader)
+		{
+			//	default
+			Shader.SetUniform("VertexRect", new float4(0,0,1,1) );
+			OnSetUniforms(arguments);
+		}
+		RenderGeo( this.Shader, PopGlBlitter.BlitGeometry, SetUniforms );
 	}
 }
 
@@ -68,6 +81,8 @@ function RenderGeo(Shader,Geo,OnSetUniforms,RenderTarget)
 		//	all interleaved vertex data
 		let Attrib = Geo.Attributes[0];
 		let PositionUniform = gl.getAttribLocation( Shader.Program, Attrib.Uniform );
+		if ( PositionUniform == -1 )
+			throw "Shader does not have a uniform named " + Attrib.Uniform + " (compiled out?)";
 		//	gr: need to convert to array of floats...
 		let VertexData = Geo.GetVertexData();
 		gl.bufferData( gl.ARRAY_BUFFER, VertexData, gl.STATIC_DRAW );
