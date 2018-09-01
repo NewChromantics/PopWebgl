@@ -239,13 +239,14 @@ function AllocPixelBuffer(Size,Colour8888)
 	return new Uint8Array(PixelArray);
 }
 
-function TTexture(Name,WidthOrUrl,Height)
+function TTexture(Name,WidthOrUrl,Height,LinearFilter)
 {
 	this.Name = Name;
 	this.Asset = null;
 	this.Width = 0;
 	this.Height = 0;
 	this.Filename = null;
+	this.LinearFilter = (LinearFilter!==false);
 
 	const TextureInitColour = HexToColour4('00ddffff');
 	
@@ -257,7 +258,7 @@ function TTexture(Name,WidthOrUrl,Height)
 		this.Asset = gl.createTexture();
 	}
 	
-	this.WritePixels = function(Width,Height,Pixels,FilterMode)
+	this.WritePixels = function(Width,Height,Pixels)
 	{
 		gl.bindTexture(gl.TEXTURE_2D, this.Asset );
 		const level = 0;
@@ -298,8 +299,7 @@ function TTexture(Name,WidthOrUrl,Height)
 		let RepeatMode = gl.CLAMP_TO_EDGE;
 		//let RepeatMode = gl.REPEAT;
 		
-		if ( FilterMode === undefined )
-			FilterMode = gl.LINEAR;
+		FilterMode = this.LinearFilter ? gl.LINEAR : gl.NEAREST;
 		
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, RepeatMode);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, RepeatMode);
