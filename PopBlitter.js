@@ -22,9 +22,9 @@ var PopGlBlitter =
 	}
 	`,
 	
-	AllocBlitGeometry : function()
+	AllocBlitGeometry : function(Context)
 	{
-		let CanvasGeo = new TGeometry("Canvas",gl.TRIANGLE_STRIP);
+		let CanvasGeo = new TGeometry("Canvas",gl.TRIANGLE_STRIP,Context);
 		let Uvs = [
 				   new float2( 0, 0 ),
 				   new float2( 1, 0 ),
@@ -37,17 +37,17 @@ var PopGlBlitter =
 	
 	BlitGeometry : null,
 	
-	Init : function()
+	Init : function(Context)
 	{
 		if ( PopGlBlitter.BlitGeometry == null )
-			PopGlBlitter.BlitGeometry = PopGlBlitter.AllocBlitGeometry();
+			PopGlBlitter.BlitGeometry = PopGlBlitter.AllocBlitGeometry(Context);
 	}
 };
 
 
-function TBlitter(Name,FragShader)
+function TBlitter(Name,FragShader,Context)
 {
-	PopGlBlitter.Init();
+	PopGlBlitter.Init(Context);
 
 	this.Shader = new TShader( Name, PopGlBlitter.VertShader, FragShader );
 	
@@ -72,10 +72,9 @@ function RenderGeo(Shader,Geo,OnSetUniforms,RenderTarget)
 	OnSetUniforms( Shader, Geo, RenderTarget );
 	
 	//	setup buffer
-	if ( Geo.Buffer == null )
+	Geo.CreateBuffer();
 	{
-		//Geo.CreateBuffer();
-		Geo.Buffer = gl.createBuffer();
+		gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
 		gl.bindBuffer( gl.ARRAY_BUFFER, Geo.Buffer );
 		
 		//	all interleaved vertex data
@@ -97,8 +96,10 @@ function RenderGeo(Shader,Geo,OnSetUniforms,RenderTarget)
 	
 	let Attrib = Geo.Attributes[0];
 	let PositionUniform = gl.getAttribLocation( Shader.Program, Attrib.Uniform );
-
+	
+	gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, null );
 	gl.bindBuffer( gl.ARRAY_BUFFER, Geo.Buffer );
+	
 	gl.enableVertexAttribArray( PositionUniform );
 	gl.drawArrays( Geo.PrimitiveType, 0, Geo.IndexCount );
 }

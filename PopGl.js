@@ -64,6 +64,7 @@ function TContext(CanvasElement)
 {
 	this.Context = null;
 	this.Canvas = CanvasElement;
+	this.OnResetCallbacks = [];
 	
 	this.Context = CanvasElement.getContext("webgl");
 	if ( !this.Context )
@@ -79,13 +80,37 @@ function TContext(CanvasElement)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	}
 	
-	//	setup global var
-	gl = this.Context;
-	gl.disable(gl.CULL_FACE);
-
-	//	enable float textures on GLES1
-	//	https://developer.mozilla.org/en-US/docs/Web/API/OES_texture_float
-	var ext = gl.getExtension('OES_texture_float');
+	this.AddOnContextResetCallback = function(OnReset)
+	{
+		this.OnResetCallbacks.push( OnReset );
+	}
+	
+	this.OnNewContext = function()
+	{
+		console.log("On new context");
+		//	setup global var
+		gl = this.Context;
+		gl.disable(gl.CULL_FACE);
+		
+		//	enable float textures on GLES1
+		//	https://developer.mozilla.org/en-US/docs/Web/API/OES_texture_float
+		var ext = gl.getExtension('OES_texture_float');
+		
+		//	do resets
+		let OldResets = this.OnResetCallbacks;
+		this.OnResetCallbacks = [];
+		OldResets.forEach( function(r){ r(); });
+	}
+	
+	this.OnVrDisplayPresentChanged = function()
+	{
+		console.log("OnVrDisplayPresentChanged");
+		this.OnNewContext();
+	}
+	
+	window.addEventListener('vrdisplaypresentchange', this.OnVrDisplayPresentChanged.bind(this), true);
+	this.Canvas.addEventListener('webglcontextrestored', this.OnNewContext.bind(this), false);
+	this.OnNewContext();
 }
 
 
@@ -147,7 +172,7 @@ function TAttribute(Uniform,Buffer)
 	}
 }
 
-function TGeometry(Name,PrimitiveType)
+function TGeometry(Name,PrimitiveType,Context)
 {
 	this.Name = Name;
 	this.Attributes = [];
@@ -169,6 +194,15 @@ function TGeometry(Name,PrimitiveType)
 	
 	this.CreateBuffer = function()
 	{
+		if ( gl.isBuffer(this.Buffer) )
+		{
+			gl.deleteBuffer( this.Buffer );
+			this.Buffer = null;
+		}
+		
+		this.Buffer = gl.createBuffer();
+		let This = this;
+		Context.AddOnContextResetCallback( function(){	This.Buffer = null;	} );
 	}
 	
 	this.GetVertexData = function()
@@ -185,6 +219,8 @@ function TGeometry(Name,PrimitiveType)
 		this.Attributes.forEach( EnumFloats );
 		return new Float32Array( Floats );
 	}
+
+	
 }
 
 function AllocPixelBuffer(Size,Colour8888)
@@ -329,13 +365,18 @@ function TTexture(Name,WidthOrUrl,Height)
 	}
 }
 
-function TScreen(CanvasElement,ViewportMinMax)
+function TScreen(Name,CanvasElement,ViewportMinMax)
 {
 	if ( ViewportMinMax === undefined )
 		ViewportMinMax = new float4(0,0,1,1);
 	
 	this.CanvasElement = CanvasElement;
 	this.ViewportMinMax = ViewportMinMax;
+
+	this.GetName = function()
+	{
+		return Name;
+	}
 	
 	this.GetWidth = function()
 	{
@@ -349,20 +390,20 @@ function TScreen(CanvasElement,ViewportMinMax)
 	
 	this.GetViewportWidth = function()
 	{
-		return this.GetWidth() * (ViewportMinMax.z-ViewportMinMax.x);
+		return this.GetWidth() * (this.ViewportMinMax.z-this.ViewportMinMax.x);
 	}
 	
 	this.GetViewportHeight = function()
 	{
-		return this.GetHeight() * (ViewportMinMax.w-ViewportMinMax.y);
+		return this.GetHeight() * (this.ViewportMinMax.w-this.ViewportMinMax.y);
 	}
 
 	//  unbind any frame buffer
 	this.Bind = function()
 	{
 		gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-		let ViewportMinx = ViewportMinMax.x * this.GetWidth();
-		let ViewportMiny = ViewportMinMax.y * this.GetHeight();
+		let ViewportMinx = this.ViewportMinMax.x * this.GetWidth();
+		let ViewportMiny = this.ViewportMinMax.y * this.GetHeight();
 		let ViewportWidth = this.GetViewportWidth();
 		let ViewportHeight = this.GetViewportHeight();
 		gl.viewport( ViewportMinx, ViewportMiny, ViewportWidth, ViewportHeight );
@@ -453,6 +494,11 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 	this.Bind = function()
 	{
 		gl.useProgram( this.Program );
+
+		//	disable all attribs
+		let ActiveAttribCount = gl.getProgramParameter(this.Program, gl.ACTIVE_ATTRIBUTES);
+		for ( let a=0;	a<ActiveAttribCount;	a++ )
+			gl.disableVertexAttribArray( a );
 		
 		//	reset texture counter everytime we bind
 		this.CurrentTextureIndex = 0;
