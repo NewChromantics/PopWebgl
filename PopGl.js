@@ -112,9 +112,19 @@ function float4(x,y,z,w)
 	this.w = w;
 }
 
-function Matrix4x4()
+function Matrix4x4(Values)
 {
 	this.Values = mat4.create();
+	
+	if ( Array.isArray(Values) )
+	{
+		let This = this;
+		let CopyValue = function(v,i)
+		{
+			This.Values[i] = v;
+		};
+		Values.forEach( CopyValue );
+	}
 	
 	this.Invert = function()
 	{
@@ -203,13 +213,14 @@ function AllocPixelBuffer(Size,Colour8888)
 	return new Uint8Array(PixelArray);
 }
 
-function TTexture(Name,WidthOrUrl,Height)
+function TTexture(Name,WidthOrUrl,Height,OnChanged)
 {
 	this.Name = Name;
 	this.Asset = null;
 	this.Width = 0;
 	this.Height = 0;
 	this.Filename = null;
+	this.OnChanged = OnChanged ? OnChanged : function(){};
 
 	const TextureInitColour = HexToColour4('00ddffff');
 	
@@ -228,13 +239,17 @@ function TTexture(Name,WidthOrUrl,Height)
 		const internalFormat = gl.RGBA;
 		const srcFormat = gl.RGBA;
 		
-		if ( Pixels instanceof Image )
+		//	https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/texImage2D
+		if ( Pixels instanceof ImageData ||
+			Pixels instanceof HTMLImageElement ||
+			Pixels instanceof HTMLCanvasElement ||
+			Pixels instanceof HTMLVideoElement  )
 		{
-			console.log(Pixels);
 			const srcType = gl.UNSIGNED_BYTE;
 			this.Width = Pixels.width;
 			this.Height = Pixels.height;
 			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat,	srcFormat, srcType, Pixels);
+			this.OnChanged(this);
 		}
 		else if ( Pixels instanceof Uint8Array )
 		{
@@ -243,6 +258,7 @@ function TTexture(Name,WidthOrUrl,Height)
 			const srcType = gl.UNSIGNED_BYTE;
 			const border = 0;
 			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, Width, Height, border, srcFormat, srcType, Pixels);
+			this.OnChanged(this);
 		}
 		else if ( Pixels instanceof Float32Array )
 		{
@@ -251,6 +267,7 @@ function TTexture(Name,WidthOrUrl,Height)
 			const srcType = gl.FLOAT;
 			const border = 0;
 			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, Width, Height, border, srcFormat, srcType, Pixels);
+			this.OnChanged(this);
 		}
 		
 		// WebGL1 has different requirements for power of 2 images
@@ -274,6 +291,7 @@ function TTexture(Name,WidthOrUrl,Height)
 	
 	this.Load = function(Url,ForcedFilename)
 	{
+		console.log("Loading " + Url);
 		if ( ForcedFilename === undefined )
 			ForcedFilename = Url;
 			
@@ -287,6 +305,7 @@ function TTexture(Name,WidthOrUrl,Height)
 		{
 			This.WritePixels( 0, 0, image );
 			This.Filename = ForcedFilename;
+			console.log("Loaded " + This.Filename);
 		};
 		//  trigger load
 		image.src = Url;
@@ -320,6 +339,11 @@ function TTexture(Name,WidthOrUrl,Height)
 		let Url = WidthOrUrl;
 		this.CreateAsset();
 		this.Load( Url );
+	}
+	else if ( WidthOrUrl instanceof Image )
+	{
+		this.CreateAsset();
+		this.WritePixels( 0, 0, WidthOrUrl );
 	}
 	else
 	{
@@ -529,6 +553,7 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		let float16 = Value.Values;
 		let Normalise = false;
+		//console.log(float16);
 		gl.uniformMatrix4fv( UniformPtr, Normalise, float16 );
 	}
 	
