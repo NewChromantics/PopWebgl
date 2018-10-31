@@ -281,7 +281,11 @@ function TTexture(Name,WidthOrUrl,Height,OnChanged)
 		
 		if ( FilterMode === undefined )
 			FilterMode = gl.LINEAR;
-		
+		else if ( FilterMode === true )
+			FilterMode = gl.LINEAR;
+		else if ( FilterMode === false )
+			FilterMode = gl.NEAREST;
+
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, RepeatMode);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, RepeatMode);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, FilterMode);
