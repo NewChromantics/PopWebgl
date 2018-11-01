@@ -520,7 +520,7 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 		else if ( Value instanceof float3 )		this.SetUniformFloat3( Uniform, Value );
 		else if ( Value instanceof float4 )		this.SetUniformFloat4( Uniform, Value );
 		else if ( Value instanceof Matrix4x4 )	this.SetUniformMatrix4x4( Uniform, Value );
-		else if ( typeof Value === 'number' )	this.SetUniformInt( Uniform, Value );
+		else if ( typeof Value === 'number' )	this.SetUniformNumber( Uniform, Value );
 		else
 		{
 			console.log(typeof Value);
@@ -549,20 +549,29 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 		gl.uniform1i( UniformPtr, TextureIndex );
 	}
 	
-	this.SetUniformInt = function(Uniform,Value)
+	this.SetUniformNumber = function(Uniform,Value)
 	{
 		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
-		gl.uniform1i( UniformPtr, Value );
+		let UniformType = this.GetUniformType( Uniform );
+		//	gr: this always returns 0 on imac12,2
+		//let UniformType = gl.getUniform( this.Program, UniformPtr );
+		
+		switch ( UniformType )
+		{
+			case gl.INT:
+			case gl.UNSIGNED_INT:
+			case gl.BOOL:
+				gl.uniform1i( UniformPtr, Value );
+				break;
+			case gl.FLOAT:
+				gl.uniform1f( UniformPtr, Value );
+				break;
+			default:
+				throw "Unhandled Number uniform type " + UniformType;
+		}
 	}
-	
-	this.SetUniformFloat = function(Uniform,Value)
-	{
-		let gl = this.GetGlContext();
-		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
-		gl.uniform1f( UniformPtr, Value );
-	}
-	
+
 	this.SetUniformFloat2 = function(Uniform,Value)
 	{
 		let gl = this.GetGlContext();
@@ -593,6 +602,25 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 		//console.log(float16);
 		gl.uniformMatrix4fv( UniformPtr, Normalise, float16 );
 	}
+	
+	//	todo: cache this!
+	this.GetUniformType = function(Uniform)
+	{
+		let gl = this.GetGlContext();
+		let UniformCount = gl.getProgramParameter( this.Program, gl.ACTIVE_UNIFORMS );
+		for ( let i=0;	i<UniformCount;	i++ )
+		{
+			let UniformMeta = gl.getActiveUniform( this.Program, i );
+			//	note: uniform consists of structs, Array[Length] etc
+			if ( UniformMeta.name != Uniform )
+				continue;
+			return UniformMeta.type;
+		}
+		throw "No uniform named " + Uniform;
+	}
+	
+	
+
 	
 	let gl = this.GetGlContext();
 	this.FragShader = this.CompileShader( gl.FRAGMENT_SHADER, FragShaderSource );
