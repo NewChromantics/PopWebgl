@@ -13,10 +13,25 @@ var PopGlBlitter =
 		uv.x = mix( 0.0, 1.0, uv.x );
 		uv.y = mix( 0.0, 1.0, uv.y );
 	}
-	`,
+	`
+};
+
+
+function TBlitter(Context,Name,FragShader)
+{
+	this.Context = Context;
+	this.BlitGeometry = null;
+	this.Shader = null;
 	
-	AllocBlitGeometry : function()
+	this.Render = function(Target,OnSetUniforms)
 	{
+		Target.Bind();
+		RenderGeo( this.Shader, this.BlitGeometry, OnSetUniforms, Target );
+	}
+	
+	this.AllocBlitGeometry = function()
+	{
+		let gl = this.Context.GetGlContext();
 		let CanvasGeo = new TGeometry("Canvas",gl.TRIANGLE_STRIP);
 		let Uvs = [
 				   new float2( 0, 0 ),
@@ -24,36 +39,18 @@ var PopGlBlitter =
 				   new float2( 0, 1 ),
 				   new float2( 1, 1 ),
 				   ];
-		CanvasGeo.AddAttribute( new TAttribute("PositionNorm", Uvs ) );
+		CanvasGeo.AddAttribute( new TAttribute(Context,"PositionNorm", Uvs ) );
 		return CanvasGeo;
-	},
-	
-	BlitGeometry : null,
-	
-	Init : function()
-	{
-		if ( PopGlBlitter.BlitGeometry == null )
-			PopGlBlitter.BlitGeometry = PopGlBlitter.AllocBlitGeometry();
 	}
-};
 
-
-function TBlitter(Name,FragShader)
-{
-	PopGlBlitter.Init();
-
-	this.Shader = new TShader( Name, PopGlBlitter.VertShader, FragShader );
-	
-	this.Render = function(Target,OnSetUniforms)
-	{
-		Target.Bind();
-		RenderGeo( this.Shader, PopGlBlitter.BlitGeometry, OnSetUniforms, Target );
-	}
+	this.BlitGeometry = this.AllocBlitGeometry();
+	this.Shader = new TShader( this.Context, Name, PopGlBlitter.VertShader, FragShader );
 }
 
 
 function RenderGeo(Shader,Geo,OnSetUniforms,RenderTarget)
 {
+	let gl = Shader.GetGlContext();
 	Shader.Bind();
 	
 	OnSetUniforms( Shader, Geo, RenderTarget );

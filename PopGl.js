@@ -42,23 +42,6 @@ function HexToColour4(Hex)
 	return Colour4;
 }
 
-//	namespace
-var PopGl =
-{
-	GetTypeAndSize : function(Type)
-	{
-		if ( typeof Type == "number" )	return { Type:gl.FLOAT, Size:1 };
-		if ( Type instanceof float2 ) return { Type:gl.FLOAT, Size:2 };
-		if ( Type instanceof float3 ) return { Type:gl.FLOAT, Size:3 };
-		if ( Type instanceof float4 ) return { Type:gl.FLOAT, Size:4 };
-		throw "Unhandled type " + Typename;
-	},
-	
-};
-
-//	global that needs some refactor
-var gl = null;
-
 
 function TContext(CanvasElement)
 {
@@ -69,8 +52,14 @@ function TContext(CanvasElement)
 	if ( !this.Context )
 		throw "Failed to initialise webgl";
 
+	this.GetGlContext = function()
+	{
+		return this.Context;
+	}
+	
 	this.Clear = function(Colour4)
 	{
+		let gl = this.GetGlContext();
 		let r = Colour4.x;
 		let g = Colour4.y;
 		let b = Colour4.z;
@@ -79,8 +68,7 @@ function TContext(CanvasElement)
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	}
 	
-	//	setup global var
-	gl = this.Context;
+	let gl = this.GetGlContext();
 	gl.disable(gl.CULL_FACE);
 
 	//	enable float textures on GLES1
@@ -133,11 +121,21 @@ function Matrix4x4(Values)
 	}
 }
 
-function TAttribute(Uniform,Buffer)
+function GetTypeAndSize(Context,Type)
+{
+	let gl = Context.GetGlContext();
+	if ( typeof Type == "number" )	return { Type:gl.FLOAT, Size:1 };
+	if ( Type instanceof float2 ) return { Type:gl.FLOAT, Size:2 };
+	if ( Type instanceof float3 ) return { Type:gl.FLOAT, Size:3 };
+	if ( Type instanceof float4 ) return { Type:gl.FLOAT, Size:4 };
+	throw "Unhandled type " + Type;
+}
+
+function TAttribute(Context,Uniform,Buffer)
 {
 	this.Uniform = Uniform;
-	
-	let TypeAndSize = PopGl.GetTypeAndSize(Buffer[0]);
+
+	let TypeAndSize = GetTypeAndSize( Context, Buffer[0] );
 	this.Type = TypeAndSize.Type;
 	this.Size = TypeAndSize.Size;
 	this.Stride = 0;
@@ -213,7 +211,7 @@ function AllocPixelBuffer(Size,Colour8888)
 	return new Uint8Array(PixelArray);
 }
 
-function TTexture(Name,WidthOrUrl,Height,OnChanged)
+function TTexture(Context,Name,WidthOrUrl,Height,OnChanged)
 {
 	this.Name = Name;
 	this.Asset = null;
@@ -221,19 +219,23 @@ function TTexture(Name,WidthOrUrl,Height,OnChanged)
 	this.Height = 0;
 	this.Filename = null;
 	this.OnChanged = OnChanged ? OnChanged : function(){};
+	this.Context = Context;
 
 	const TextureInitColour = HexToColour4('00ddffff');
 	
 	this.GetWidth = function()	{	return this.Width;	}
 	this.GetHeight = function()	{	return this.Height;	}
+	this.GetGlContext = function()	{	return this.Context.GetGlContext();	}
 
 	this.CreateAsset = function()
 	{
+		let gl = this.GetGlContext();
 		this.Asset = gl.createTexture();
 	}
 	
 	this.WritePixels = function(Width,Height,Pixels,FilterMode)
 	{
+		let gl = this.GetGlContext();
 		gl.bindTexture(gl.TEXTURE_2D, this.Asset );
 		const level = 0;
 		const internalFormat = gl.RGBA;
@@ -357,13 +359,19 @@ function TTexture(Name,WidthOrUrl,Height,OnChanged)
 	}
 }
 
-function TScreen(CanvasElement,ViewportMinMax)
+function TScreen(Context,CanvasElement,ViewportMinMax)
 {
 	if ( ViewportMinMax === undefined )
 		ViewportMinMax = new float4(0,0,1,1);
-	
+
+	this.Context = Context;
 	this.CanvasElement = CanvasElement;
 	this.ViewportMinMax = ViewportMinMax;
+	
+	this.GetGlContext = function()
+	{
+		return this.Context.GetGlContext();
+	}
 	
 	this.GetWidth = function()
 	{
@@ -388,6 +396,7 @@ function TScreen(CanvasElement,ViewportMinMax)
 	//  unbind any frame buffer
 	this.Bind = function()
 	{
+		let gl = this.GetGlContext();
 		gl.bindFramebuffer( gl.FRAMEBUFFER, null );
 		let ViewportMinx = ViewportMinMax.x * this.GetWidth();
 		let ViewportMiny = ViewportMinMax.y * this.GetHeight();
@@ -397,14 +406,21 @@ function TScreen(CanvasElement,ViewportMinMax)
 	}
 }
 
-function TRenderTarget(Name,Texture)
+function TRenderTarget(Context,Name,Texture)
 {
 	this.Name = Name;
 	this.FrameBuffer = null;
 	this.Texture = null;
+	this.Context = Context;
+	
+	this.GetGlContext = function()
+	{
+		return this.Context.GetGlContext();
+	}
 	
 	this.CreateFrameBuffer = function(Texture)
 	{
+		let gl = this.GetGlContext();
 		this.FrameBuffer = gl.createFramebuffer();
 		this.Texture = Texture;
 		
@@ -419,6 +435,7 @@ function TRenderTarget(Name,Texture)
 	//  bind for rendering
 	this.Bind = function()
 	{
+		let gl = this.GetGlContext();
 		gl.bindFramebuffer( gl.FRAMEBUFFER, this.FrameBuffer );
 		gl.viewport(0, 0, this.GetWidth(), this.GetHeight() );
 	}
@@ -439,16 +456,23 @@ function TRenderTarget(Name,Texture)
 
 
 
-function TShader(Name,VertShaderSource,FragShaderSource)
+function TShader(Context,Name,VertShaderSource,FragShaderSource)
 {
 	this.Name = Name;
 	this.VertShader = null;
 	this.FragShader = null;
 	this.Program = null;
 	this.CurrentTextureIndex = 0;
+	this.Context = Context;
+	
+	this.GetGlContext = function()
+	{
+		return this.Context.GetGlContext();
+	}
 	
 	this.CompileShader = function(Type,Source)
 	{
+		let gl = this.GetGlContext();
 		let Shader = gl.createShader(Type);
 		gl.shaderSource( Shader, Source );
 		gl.compileShader( Shader );
@@ -464,6 +488,7 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 	
 	this.CompileProgram = function()
 	{
+		let gl = this.GetGlContext();
 		let Program = gl.createProgram();
 		gl.attachShader( Program, this.VertShader );
 		gl.attachShader( Program, this.FragShader );
@@ -480,6 +505,7 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 	
 	this.Bind = function()
 	{
+		let gl = this.GetGlContext();
 		gl.useProgram( this.Program );
 		
 		//	reset texture counter everytime we bind
@@ -505,6 +531,7 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 	
 	this.SetUniformTexture = function(Uniform,Texture,TextureIndex)
 	{
+		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform );
 		//  https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Using_textures_in_WebGL
 		//  WebGL provides a minimum of 8 texture units;
@@ -524,36 +551,42 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 	
 	this.SetUniformInt = function(Uniform,Value)
 	{
+		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		gl.uniform1i( UniformPtr, Value );
 	}
 	
 	this.SetUniformFloat = function(Uniform,Value)
 	{
+		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		gl.uniform1f( UniformPtr, Value );
 	}
 	
 	this.SetUniformFloat2 = function(Uniform,Value)
 	{
+		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		gl.uniform2f( UniformPtr, Value.x, Value.y );
 	}
 	
 	this.SetUniformFloat3 = function(Uniform,Value)
 	{
+		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		gl.uniform3f( UniformPtr, Value.x, Value.y, Value.z );
 	}
 	
 	this.SetUniformFloat4 = function(Uniform,Value)
 	{
+		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		gl.uniform4f( UniformPtr, Value.x, Value.y, Value.z, Value.w );
 	}
 
 	this.SetUniformMatrix4x4 = function(Uniform,Value)
 	{
+		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		let float16 = Value.Values;
 		let Normalise = false;
@@ -561,6 +594,7 @@ function TShader(Name,VertShaderSource,FragShaderSource)
 		gl.uniformMatrix4fv( UniformPtr, Normalise, float16 );
 	}
 	
+	let gl = this.GetGlContext();
 	this.FragShader = this.CompileShader( gl.FRAGMENT_SHADER, FragShaderSource );
 	this.VertShader = this.CompileShader( gl.VERTEX_SHADER, VertShaderSource );
 	this.Program = this.CompileProgram();
