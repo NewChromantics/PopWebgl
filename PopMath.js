@@ -1,3 +1,32 @@
+Math.Lerp = function(Min,Max,Value)
+{
+	return Min + ((Max-Min)*Value);
+}
+Math.Range = function(Min,Max,Value)
+{
+	return (Value-Min) / (Max-Min);
+}
+Math.Clamp = function(Min,Max,Value)
+{
+	return Math.max( Min, Math.min( Max, Value ) );
+}
+Math.Clamp01 = function(Value)
+{
+	return Math.Clamp(0,1,Value);
+}
+Math.Range01 = function(Min,Max,Value)
+{
+	return Math.Clamp01( Math.Range( Min, Max, Value ) );
+}
+
+Math.Length = function(x0,y0,x1,y1)
+{
+	let dx = x1-x0;
+	let dy = y1-y0;
+	let LengthSq = dx*dx + dy*dy;
+	return Math.sqrt( LengthSq );
+}
+
 // Converts from degrees to radians.
 Math.radians = function(degrees) {
 	return degrees * Math.PI / 180;
