@@ -58,9 +58,17 @@ function float4(x,y,z,w)
 	this.y = y;
 	this.z = z;
 	this.w = w;
+	
+	this.Set = function(x,y,z,w)
+	{
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.w = w;
+	}
 }
 
-function Matrix4x4()
+function Matrix4x4(Values)
 {
 	this.Values = mat4.create();
 	
@@ -76,6 +84,28 @@ function Matrix4x4()
 		mat4.invert( Inverse.Values, this.Values );
 		return Inverse;
 	}
+	
+	if ( Array.isArray(Values) )
+	{
+		let This = this;
+		let CopyValue = function(v,i)
+		{
+			This.Values[i] = v;
+		};
+		Values.forEach( CopyValue );
+	}
+	else if ( arguments.length == 4 )
+	{
+		//	assuming 4 rows
+		for ( let r=0;	r<4;	r++ )
+		{
+			this.Values[(r*4)+0] = arguments[r].x;
+			this.Values[(r*4)+1] = arguments[r].y;
+			this.Values[(r*4)+2] = arguments[r].z;
+			this.Values[(r*4)+3] = arguments[r].w;
+		}
+	}
+	
 }
 
 //	wrapper for http://glmatrix.net/docs/module-quat.html

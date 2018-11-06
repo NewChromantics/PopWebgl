@@ -1,13 +1,3 @@
-// Converts from degrees to radians.
-Math.radians = function(degrees) {
-	return degrees * Math.PI / 180;
-};
-
-// Converts from radians to degrees.
-Math.degrees = function(radians) {
-	return radians * 180 / Math.PI;
-};
-
 function GetRed(Colour)
 {
 	let Value = parseInt( Colour.substring(0,2), 16);
@@ -77,50 +67,6 @@ function TContext(CanvasElement)
 }
 
 
-//	let hello = new float2(0,0)
-function float2(x,y)
-{
-	this.x = x;
-	this.y = y;
-}
-
-//	let hello = new float3(0,0,0)
-function float3(x,y,z)
-{
-	this.x = x;
-	this.y = y;
-	this.z = z;
-}
-
-function float4(x,y,z,w)
-{
-	this.x = x;
-	this.y = y;
-	this.z = z;
-	this.w = w;
-}
-
-function Matrix4x4(Values)
-{
-	this.Values = mat4.create();
-	
-	if ( Array.isArray(Values) )
-	{
-		let This = this;
-		let CopyValue = function(v,i)
-		{
-			This.Values[i] = v;
-		};
-		Values.forEach( CopyValue );
-	}
-	
-	this.Invert = function()
-	{
-		let OldValues = mat4.clone(this.Values);
-		mat4.invert( this.Values, OldValues );
-	}
-}
-
 function GetTypeAndSize(Context,Type)
 {
 	let gl = Context.GetGlContext();
@@ -130,6 +76,7 @@ function GetTypeAndSize(Context,Type)
 	if ( Type instanceof float4 ) return { Type:gl.FLOAT, Size:4 };
 	throw "Unhandled type " + Type;
 }
+
 
 function TAttribute(Context,Uniform,Buffer)
 {
@@ -598,9 +545,9 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 		let gl = this.GetGlContext();
 		let UniformPtr = gl.getUniformLocation( this.Program, Uniform);
 		let float16 = Value.Values;
-		let Normalise = false;
+		let Transpose = false;
 		//console.log(float16);
-		gl.uniformMatrix4fv( UniformPtr, Normalise, float16 );
+		gl.uniformMatrix4fv( UniformPtr, Transpose, float16 );
 	}
 	
 	//	todo: cache this!
