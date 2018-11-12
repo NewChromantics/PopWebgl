@@ -489,8 +489,9 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 		{
 			gl.bindTexture(gl.TEXTURE_2D, Texture.Asset);
 		}
-		catch
+		catch(e)
 		{
+			console.log("SetUniformTexture: " + e);
 			//  todo: bind "invalid" texture
 		}
 		gl.uniform1i( UniformPtr, TextureIndex );
