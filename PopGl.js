@@ -242,7 +242,7 @@ function TTexture(Context,Name,WidthOrUrl,Height,OnChanged)
 
 	}
 	
-	this.Load = function(Url,ForcedFilename)
+	this.Load = function(Url,ForcedFilename,Filter)
 	{
 		console.log("Loading " + Url);
 		if ( ForcedFilename === undefined )
@@ -256,7 +256,7 @@ function TTexture(Context,Name,WidthOrUrl,Height,OnChanged)
 		let This = this;
 		image.onload = function()
 		{
-			This.WritePixels( 0, 0, image );
+			This.WritePixels( 0, 0, image, Filter );
 			This.Filename = ForcedFilename;
 			console.log("Loaded " + This.Filename);
 		};
