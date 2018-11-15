@@ -42,6 +42,12 @@ function float2(x,y)
 {
 	this.x = x;
 	this.y = y;
+	
+	this.Enum = function(Enum)
+	{
+		Enum(this.x);
+		Enum(this.y);
+	}
 }
 
 //	let hello = new float3(0,0,0)
@@ -50,6 +56,13 @@ function float3(x,y,z)
 	this.x = x;
 	this.y = y;
 	this.z = z;
+	
+	this.Enum = function(Enum)
+	{
+		Enum(this.x);
+		Enum(this.y);
+		Enum(this.z);
+	}
 }
 
 function float4(x,y,z,w)
@@ -65,6 +78,14 @@ function float4(x,y,z,w)
 		this.y = y;
 		this.z = z;
 		this.w = w;
+	}
+	
+	this.Enum = function(Enum)
+	{
+		Enum(this.x);
+		Enum(this.y);
+		Enum(this.z);
+		Enum(this.w);
 	}
 }
 
@@ -106,6 +127,11 @@ function Matrix4x4(Values)
 		}
 	}
 	
+	
+	this.Enum = function(Enum)
+	{
+		this.Values.forEach( Enum );
+	}
 }
 
 //	wrapper for http://glmatrix.net/docs/module-quat.html
