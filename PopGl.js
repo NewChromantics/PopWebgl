@@ -462,7 +462,8 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 	//	gr: can't tell the difference between int and float, so err that wont work
 	this.SetUniform = function(Uniform,Value)
 	{
-		if ( Value instanceof TTexture )		this.SetUniformTexture( Uniform, Value, this.CurrentTextureIndex++ );
+		if( Array.isArray(Value) )				this.SetUniformArray( Uniform, Value );
+		else if ( Value instanceof TTexture )	this.SetUniformTexture( Uniform, Value, this.CurrentTextureIndex++ );
 		else if ( Value instanceof float2 )		this.SetUniformFloat2( Uniform, Value );
 		else if ( Value instanceof float3 )		this.SetUniformFloat3( Uniform, Value );
 		else if ( Value instanceof float4 )		this.SetUniformFloat4( Uniform, Value );
@@ -476,6 +477,37 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 		}
 	}
 	
+	this.SetUniformArray = function(UniformName,Values)
+	{
+		//	determine type of array, and length, and is array
+		let UniformMeta = this.GetUniformMeta(UniformName);
+		
+		//	note: uniform iv may need to be Int32Array;
+		//	https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/uniform
+		//	enumerate the array
+		let ValuesExpanded = [];
+		let EnumValue = function(v)
+		{
+			if ( Array.isArray(v) )
+				ValuesEnum.push(...v);
+			else if ( typeof v == "object" )
+				v.Enum( function(v)	{	ValuesExpanded.push(v);	} );
+			else
+				ValuesExpanded.push(v);
+		};
+		Values.forEach( EnumValue );
+		
+		//	check array size (allow less, but throw on overflow)
+		//	error if array is empty
+		while ( ValuesExpanded.length < UniformMeta.size )
+			ValuesExpanded.push(0);
+		/*
+		if ( ValuesExpanded.length > UniformMeta.size )
+			throw "Trying to put array of " + ValuesExpanded.length + " values into uniform " + UniformName + "[" + UniformMeta.size + "] ";
+		*/
+		UniformMeta.SetValues( ValuesExpanded );
+	}
+		
 	this.SetUniformTexture = function(Uniform,Texture,TextureIndex)
 	{
 		let gl = this.GetGlContext();
@@ -551,20 +583,58 @@ function TShader(Context,Name,VertShaderSource,FragShaderSource)
 		gl.uniformMatrix4fv( UniformPtr, Transpose, float16 );
 	}
 	
+	this.GetUniformType = function(UniformName)
+	{
+		let Meta = this.GetUniformMeta(UniformName);
+		return Meta.type;
+	}
+	
 	//	todo: cache this!
-	this.GetUniformType = function(Uniform)
+	this.GetUniformMeta = function(MatchUniformName)
 	{
 		let gl = this.GetGlContext();
 		let UniformCount = gl.getProgramParameter( this.Program, gl.ACTIVE_UNIFORMS );
 		for ( let i=0;	i<UniformCount;	i++ )
 		{
 			let UniformMeta = gl.getActiveUniform( this.Program, i );
+			//	match name even if it's an array
+			//	todo: struct support
+			let UniformName = UniformMeta.name.split('[')[0];
 			//	note: uniform consists of structs, Array[Length] etc
-			if ( UniformMeta.name != Uniform )
+			if ( UniformName != MatchUniformName )
 				continue;
-			return UniformMeta.type;
+			
+			UniformMeta.Location = gl.getUniformLocation( this.Program, UniformMeta.name );
+			switch( UniformMeta.type )
+			{
+				case gl.INT:
+				case gl.UNSIGNED_INT:
+				case gl.BOOL:
+					UniformMeta.SetValues = function(v)	{	gl.uniform1iv( UniformMeta.Location, v );	};
+					break;
+				case gl.FLOAT:
+					UniformMeta.SetValues = function(v)	{	gl.uniform1fv( UniformMeta.Location, v );	};
+					break;
+				case gl.FLOAT_VEC2:
+					UniformMeta.SetValues = function(v)	{	gl.uniform2fv( UniformMeta.Location, v );	};
+					break;
+				case gl.FLOAT_VEC3:
+					UniformMeta.SetValues = function(v)	{	gl.uniform3fv( UniformMeta.Location, v );	};
+					break;
+				case gl.FLOAT_VEC4:
+					UniformMeta.SetValues = function(v)	{	gl.uniform4fv( UniformMeta.Location, v );	};
+					break;
+
+				default:
+				case gl.FLOAT_MAT2:
+				case gl.FLOAT_MAT3:
+				case gl.FLOAT_MAT4:
+					UniformMeta.SetValues = function(v)	{	throw "Unhandled type " + Uniform.type + " on " + MatchUniformName;	};
+					break;
+			}
+			return UniformMeta;
 		}
-		throw "No uniform named " + Uniform;
+		throw "No uniform named " + MatchUniformName;
 	}
 	
 	
