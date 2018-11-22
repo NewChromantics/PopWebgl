@@ -218,6 +218,25 @@ function TTexture(Context,Name,WidthOrUrl,Height,OnChanged)
 			gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, Width, Height, border, srcFormat, srcType, Pixels);
 			this.OnChanged(this);
 		}
+		else if ( Pixels instanceof TTexture )
+		{
+			this.Width = Width;
+			this.Height = Height;
+			const srcType = gl.FLOAT;
+			const border = 0;
+			let FrameBuffer = new TRenderTarget( this.Context, "Temporary texture render target", Pixels );
+			FrameBuffer.Bind();
+			
+			//	gr: rebind just in case
+			gl.bindTexture(gl.TEXTURE_2D, this.Asset );
+			gl.copyTexImage2D(gl.TEXTURE_2D, level, internalFormat, 0, 0, Width, Height, border);
+
+			FrameBuffer.Delete();
+		}
+		else
+		{
+			throw "Don't know how to write pixels from source: " + (typeof Pixels);
+		}
 		
 		// WebGL1 has different requirements for power of 2 images
 		// vs non power of 2 images so check if the image is a
@@ -377,6 +396,13 @@ function TRenderTarget(Context,Name,Texture)
 		const level = 0;
 		const attachmentPoint = gl.COLOR_ATTACHMENT0;
 		gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, this.Texture.Asset, level);
+	}
+	
+	this.Delete = function()
+	{
+		let gl = this.GetGlContext();
+		gl.deleteFramebuffer( this.FrameBuffer );
+		this.FrameBuffer = null;
 	}
 	
 	//  bind for rendering
