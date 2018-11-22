@@ -106,7 +106,13 @@ function Matrix4x4(Values)
 		return Inverse;
 	}
 	
-	if ( Array.isArray(Values) )
+	if ( Values === undefined )
+	{
+		
+	}
+	//	slightly hacky way to detect typed array that we can iterate
+	//	https://stackoverflow.com/a/46999598/355753
+	else if ( Array.isArray(Values) || Values.forEach !== undefined )
 	{
 		let This = this;
 		let CopyValue = function(v,i)
@@ -125,6 +131,10 @@ function Matrix4x4(Values)
 			this.Values[(r*4)+2] = arguments[r].z;
 			this.Values[(r*4)+3] = arguments[r].w;
 		}
+	}
+	else
+	{
+		throw "Unhandled Values (" + typeof Values +") for matrix constructor";
 	}
 	
 	
