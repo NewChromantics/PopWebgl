@@ -1,3 +1,5 @@
+Math = Math || {};
+
 Math.Lerp = function(Min,Max,Value)
 {
 	return Min + ((Max-Min)*Value);
