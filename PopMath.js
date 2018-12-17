@@ -50,6 +50,9 @@ function float2(x,y)
 		Enum(this.x);
 		Enum(this.y);
 	}
+	
+	//	swizzles
+	this.xy = function()	{	return [this.x,this.y];	}
 }
 
 //	let hello = new float3(0,0,0)
@@ -65,6 +68,10 @@ function float3(x,y,z)
 		Enum(this.y);
 		Enum(this.z);
 	}
+	
+	//	swizzles
+	this.xy = function()	{	return [this.x,this.y];	}
+	this.xyz = function()	{	return [this.x,this.y,this.z];	}
 }
 
 function float4(x,y,z,w)
@@ -89,6 +96,11 @@ function float4(x,y,z,w)
 		Enum(this.z);
 		Enum(this.w);
 	}
+
+	//	swizzles
+	this.xy = function()	{	return [this.x,this.y];	}
+	this.xyz = function()	{	return [this.x,this.y,this.z];	}
+	this.xyzw = function()	{	return [this.x,this.y,this.z,this.w];	}
 }
 
 function Matrix4x4(Values)
