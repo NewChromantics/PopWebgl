@@ -105,6 +105,7 @@ function float4(x,y,z,w)
 
 function Matrix4x4(Values)
 {
+	//	gr: Values is a float32array!
 	this.Values = mat4.create();
 	
 	this.Invert = function()
@@ -151,7 +152,10 @@ function Matrix4x4(Values)
 		throw "Unhandled Values (" + typeof Values +") for matrix constructor";
 	}
 	
-	
+	this.GetArray = function()
+	{
+		return Array.from( this.Values );
+	}
 	this.Enum = function(Enum)
 	{
 		this.Values.forEach( Enum );
@@ -161,6 +165,7 @@ function Matrix4x4(Values)
 //	wrapper for http://glmatrix.net/docs/module-quat.html
 function Quaternion()
 {
+	//	gr: Values is a float32array!
 	this.Values = quat.create();
 	
 	this.FromEular = function(PitchYawRollDegrees)
