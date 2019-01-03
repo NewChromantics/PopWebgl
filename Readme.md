@@ -6,6 +6,7 @@ This code/library is intended as a very modular and abstractable interface to gr
  - Physics/Math processing (ie. 4096x4096 states to move & animate giant pointclouds on GPU)
  - Very minimal code (ie. just a frag shader) for graphics in elements 
 - Abstractable so I can use the same interface for my own engine (C/++/metal/gl/dx/vulkan/opencl low level with javascript/v8/JavascriptCore high level). I also generate render command queues low level, but it means I can take things like TensorFlow.js and abstract away the webgl implementation and then run it at a much larger parallel scale
+- API has been prepared for WebVR so I can create native & web-vr apps with the same code
 
 Examples
 ------------------
