@@ -103,6 +103,20 @@ function float4(x,y,z,w)
 	this.xyzw = function()	{	return [this.x,this.y,this.z,this.w];	}
 }
 
+//	gr: put this somewhere better!
+function GetFlipMatrix4x4()
+{
+	let Matrix =
+	[
+		1,0,0,0,
+		0,-1,0,1,
+		0,0,1,0,
+		0,0,0,1
+	];
+	return new Matrix4x4(Matrix);
+}
+
+
 function Matrix4x4(Values)
 {
 	//	gr: Values is a float32array!
