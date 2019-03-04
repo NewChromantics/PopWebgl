@@ -270,7 +270,7 @@ function TTexture(Context,Name,WidthOrUrl,Height,OnChanged)
 		//	init whilst we wait for load
 		this.WritePixels( 1, 1, AllocPixelBuffer( 1, TextureInitColour ) );
 		
-		const image = new Image();
+		const image = new Pop.Image();
 		image.crossOrigin = "anonymous";
 		let This = this;
 		image.onload = function()
